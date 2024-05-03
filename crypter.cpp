@@ -93,7 +93,7 @@ void Crypter::decrypt(char *key_init, char *input_file, char *output_file) {
             if (buffer_len > 0) {
                 dec.clear();
                 aes.decrypt_continue(buffer, buffer_len, dec);
-                fwrite(dec.data(), dec.size(), 1, output);
+                 fwrite(dec.data(), dec.size(), 1, output);
             }
         }
 
