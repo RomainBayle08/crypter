@@ -9,7 +9,7 @@ make
 
 ## with g++  
 ```bash
-g++ -std=c++17  main.cpp crypter.cpp AES_256.cpp -o crypter.exe"
+g++ -std=c++17  main.cpp crypter.cpp AES_256.cpp -o crypter.exe
 
 ```
 
