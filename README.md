@@ -9,7 +9,7 @@ g++ -std=c++17  main.cpp crypter.cpp AES_256.cpp -o crypter.exe
 
 # usage(windows): 
 ```bash
-.\crypter.exe crypt/decrypt AES256_Key Targeted_directory
+.\crypter.exe encrypt/decrypt AES256_Key Targeted_directory
 ```
 ## key exemple ( for testing purposes ):  
 ```plaintext
