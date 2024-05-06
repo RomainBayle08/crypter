@@ -7,8 +7,8 @@
 class Crypter {
 public:
     Crypter(std::string  directoryPath,std::string key);
-    void encrypt(char* key_init , char* input_file , char* output_file);
-    void decrypt(char* key_init , char* input_file , char* output_file);
+    void encrypt();
+    void decrypt();
     ~Crypter();
 
 private:
